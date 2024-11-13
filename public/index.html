@@ -1,49 +1,46 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Загрузка файла</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
 </head>
 <body>
-    <h1>Загрузить файл</h1>
-    <form id="uploadForm">
-        <input type="file" id="fileInput" name="file">
-        <button type="button" onclick="uploadFile()">Загрузить</button>
+    <h1>Upload Files</h1>
+    
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="files" multiple><br><br>
+        <button type="submit">Upload Files</button>
     </form>
-    <p id="responseMessage"></p>
 
     <script>
-        async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            const responseMessage = document.getElementById('responseMessage');
-
-            if (!fileInput.files.length) {
-                responseMessage.textContent = 'Выберите файл перед загрузкой';
-                return;
-            }
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
 
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            const files = document.querySelector('input[type="file"]').files;
+
+            // Добавляем файлы в FormData
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
 
             try {
                 const response = await fetch('/upload', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    responseMessage.textContent = `Ошибка: ${errorData.error}`;
-                    return;
+                    throw new Error('File upload failed');
                 }
 
-                const result = await response.json();
-                responseMessage.textContent = `Успех: ${result.message}`;
+                const result = await response.text();
+                alert(result);
             } catch (error) {
-                responseMessage.textContent = `Ошибка: ${error.message}`;
-                console.error('Ошибка при загрузке:', error);
+                alert('Error: ' + error.message);
             }
-        }
+        });
     </script>
 </body>
 </html>

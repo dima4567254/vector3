@@ -1,56 +1,50 @@
 const express = require('express');
 const fileUpload = require('express-fileupload');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+const port = 3000;
 
-// Подключаем middleware для обработки файлов
+// Настройка express для обработки загрузки файлов
 app.use(fileUpload());
 
-// Настраиваем директорию для статических файлов
+// Указываем директорию для статических файлов (например, для HTML, CSS)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Маршрут для загрузки файла
+// Роут для обработки загрузки файлов
 app.post('/upload', async (req, res) => {
     try {
-        // Проверяем, что файлы были загружены
         if (!req.files || Object.keys(req.files).length === 0) {
-            return res.status(400).json({ error: 'Файлы не были загружены' });
+            return res.status(400).send('No files were uploaded.');
         }
 
-        // Проверка на наличие файла с ключом 'file'
-        const uploadedFile = req.files.file;
-        if (!uploadedFile) {
-            return res.status(400).json({ error: 'Отсутствует файл с ключом "file"' });
+        const files = Array.isArray(req.files.files) ? req.files.files : [req.files.files];
+        const outputDir = path.join(__dirname, 'output');
+
+        // Создаем директорию для сохранения файлов, если ее нет
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir);
         }
 
-        // Проверяем тип файла
-        const allowedExtensions = /png|jpg|jpeg/;
-        const fileExtension = path.extname(uploadedFile.name).toLowerCase();
-        if (!allowedExtensions.test(fileExtension)) {
-            return res.status(400).json({ error: 'Неподдерживаемый тип файла' });
+        // Перебираем файлы и сохраняем их
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const filePath = path.join(outputDir, file.name);
+
+            // Сохраняем файл
+            await file.mv(filePath);
+            console.log(`File saved: ${filePath}`);
         }
 
-        // Сохраняем файл в директорию uploads
-        const uploadPath = path.join(__dirname, 'uploads', uploadedFile.name);
-
-        // Перемещаем файл в указанное место
-        uploadedFile.mv(uploadPath, (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Ошибка при сохранении файла' });
-            }
-
-            // Отправляем успешный ответ
-            res.status(200).json({ message: 'Файл успешно загружен', filePath: uploadPath });
-        });
+        res.send('Files have been uploaded and processed.');
     } catch (error) {
-        console.error('Ошибка при обработке запроса:', error);
-        res.status(500).json({ error: 'Произошла внутренняя ошибка сервера' });
+        console.error('Error during file upload:', error);
+        res.status(500).send('There was an error processing your file.');
     }
 });
 
-// Запускаем сервер
-app.listen(PORT, () => {
-    console.log(`Сервер запущен на http://localhost:${PORT}`);
+// Запуск сервера
+app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
 });

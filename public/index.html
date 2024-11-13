@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Загрузка файла</title>
+</head>
+<body>
+    <h1>Загрузить файл</h1>
+    <form id="uploadForm">
+        <input type="file" id="fileInput" name="file">
+        <button type="button" onclick="uploadFile()">Загрузить</button>
+    </form>
+    <p id="responseMessage"></p>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const responseMessage = document.getElementById('responseMessage');
+
+            if (!fileInput.files.length) {
+                responseMessage.textContent = 'Выберите файл перед загрузкой';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    responseMessage.textContent = `Ошибка: ${errorData.error}`;
+                    return;
+                }
+
+                const result = await response.json();
+                responseMessage.textContent = `Успех: ${result.message}`;
+            } catch (error) {
+                responseMessage.textContent = `Ошибка: ${error.message}`;
+                console.error('Ошибка при загрузке:', error);
+            }
+        }
+    </script>
+</body>
+</html>
